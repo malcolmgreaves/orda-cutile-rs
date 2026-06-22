@@ -1,0 +1,7 @@
+# Keep the build context small/fast — none of these are needed inside the image.
+target/
+.git/
+.github/
+**/*.md
+Dockerfile
+.dockerignore

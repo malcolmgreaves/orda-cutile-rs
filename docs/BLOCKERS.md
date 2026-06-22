@@ -78,6 +78,39 @@ On a machine that meets cuTile Rust's requirements:
 3. **Build**: `cargo build --features cuda`.
 4. **Run the demo / tests**: `cargo run --features cuda` and `cargo test --features cuda`.
 
+## Resolution via Docker (`Dockerfile` at repo root)
+
+The repo now ships a `Dockerfile` based on `nvidia/cuda:13.3.0-devel-ubuntu24.04`.
+The `-devel` image bundles the CUDA 13.3 toolkit + headers, so it **resolves both
+blockers at compile time**:
+
+- **Blocker 1** — the toolkit is present, so `cuda-bindings`' bindgen finds the
+  CUDA headers and `cargo build --features cuda` compiles (no GPU required to
+  build).
+- **Blocker 2** — the container starts from a clean, normally-permissioned
+  `~/.cargo`, so the cuda-only deps fetch and extract cleanly.
+
+Build it (resolves the compile blocker anywhere, including macOS):
+
+```bash
+docker build -t orda-cutile:cuda .
+# Apple Silicon: add --platform linux/amd64 (builds under emulation — slow but valid)
+```
+
+**Running the kernels still requires real GPU hardware.** The image is
+`linux/amd64` and executes CUDA only when an NVIDIA GPU (sm_80+) is exposed via
+the NVIDIA Container Toolkit. This works on a **Linux + NVIDIA host**, not on
+macOS — Docker Desktop's VM has no NVIDIA GPU and no CUDA passthrough:
+
+```bash
+docker run --rm --gpus all orda-cutile:cuda                            # GPU tests / correctness gate
+docker run --rm --gpus all orda-cutile:cuda cargo run --features cuda  # GPU demo
+```
+
+So on macOS the Dockerfile gets you a **successful compile** of the GPU path
+(closing the fundamental blocker); on-hardware execution and validation happen by
+running the same image on a GPU host.
+
 ## What specifically needs on-hardware validation
 
 The math is settled (it matches the validated CPU reference); these are the

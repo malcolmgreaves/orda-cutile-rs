@@ -90,9 +90,29 @@ The GPU backend is behind a Cargo feature:
 cargo build --features cuda    # requires NVIDIA sm_80+ GPU, CUDA 13.3, Rust 1.89+, Linux
 ```
 
-It **cannot be built on this development machine** (macOS, no CUDA toolkit). The
-exact blocker, evidence, and a hardware bring-up + validation checklist are in
-[`docs/BLOCKERS.md`](docs/BLOCKERS.md).
+It **cannot be built natively on this development machine** (macOS, no CUDA
+toolkit). The exact blocker, evidence, and a hardware bring-up + validation
+checklist are in [`docs/BLOCKERS.md`](docs/BLOCKERS.md).
+
+### Docker (GPU)
+
+A `Dockerfile` (CUDA 13.3 `-devel`, Ubuntu 24.04) bundles the toolkit, so it
+**compiles the `cuda` feature anywhere** — including macOS, where it closes the
+build blocker:
+
+```bash
+docker build -t orda-cutile:cuda .
+# Apple Silicon: add --platform linux/amd64 (builds under emulation, slow but valid)
+```
+
+Running the kernels needs a real NVIDIA GPU (sm_80+) via the NVIDIA Container
+Toolkit — a **Linux + NVIDIA host**, not macOS (no GPU passthrough in Docker
+Desktop):
+
+```bash
+docker run --rm --gpus all orda-cutile:cuda                            # GPU tests
+docker run --rm --gpus all orda-cutile:cuda cargo run --features cuda  # GPU demo
+```
 
 ## Layout
 
